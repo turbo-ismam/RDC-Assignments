@@ -56,6 +56,12 @@ int  main(int argc,char **argv,char **env){ // NOTE: env is the variable to be p
 	{
 		si[i].SocketDescriptor = socket(AF_INET,SOCK_DGRAM, IPPROTO_UDP);
 	}
+
+	if (si[i].SocketDescriptor<0) {
+		perror("socket");
+		exit(EXIT_FAILURE);
+	}
+
 	br = bind(si[i].SocketDescriptor, (struct sockaddr *) &server_addr, sizeof(server_addr));
 
 	if (br < 0)
@@ -63,16 +69,13 @@ int  main(int argc,char **argv,char **env){ // NOTE: env is the variable to be p
         perror(”bind"); // Print error message
         exit(EXIT_FAILURE);
     }
-	lr = listen(sfd, BACK_LOG);
+	lr = listen(si.[i].SocketDescriptor, BACK_LOG);
 	if (lr < 0){
-        perror(list"); // Print error message
+        perror("listen"); // Print error message
         exit(EXIT_FAILURE);
     }
 
-	if (si[i].SocketDescriptor<0) {
-		perror("socket");
-		exit(EXIT_FAILURE);
-	}
+
 	i++;
 	}
 
