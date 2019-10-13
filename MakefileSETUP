@@ -1,0 +1,30 @@
+all : tcpServer.exe tcpClient.exe udpServer.exe udpClient.exe
+
+udpServer.exe : udpServer.o
+	gcc -o udpServer.exe udpServer.o
+
+udpClient.exe : udpClient.o
+	gcc -o udpServer.exe udpClient.o
+
+tcpServer.exe : tcpServer.o
+	gcc -o tcpServer.exe tcpServer.o
+
+tcpClient.exe : tcpClient.o
+	gcc -o tcpServer.exe tcpClient.o
+
+tcpClient.o : tcpClient.c myfunction.h
+	gcc -c tcpClient.c
+
+tcpServer.o : tcpServer.c myfunction.h
+	gcc -c tcpServer.c
+
+udpClient.o : udpClient.c myfunction.h
+	gcc -c udpClient.c
+
+udpServer.o : udpServer.c myfunction.h
+	gcc -c udpServer.c
+
+.PHONY: clean
+
+clean:
+	rm -f tcpServer.exe tcpClient.exe udpServer.exe udpClient.exe tcpServer.o tcpClient.o udpServer.o udpClient.o
