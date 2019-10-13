@@ -23,7 +23,7 @@ typedef struct
 	int SocketDescriptor;		//socket descriptor associated to the port
 	int PID;			//process ID
 } serviceInfo;
-struct sockaddr_in server_addr;
+
 //Function prototype devoted to handle the death of the son process
 void handle_signal (int sig);
 
@@ -32,13 +32,9 @@ int  main(int argc,char **argv,char **env){ // NOTE: env is the variable to be p
 	serviceInfo si[10];
 	int i=0, br, lr;
 	char ch;
+	struct sockaddr_in server_addr[10];
+	
 	FILE *fileptr;
-	server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(SERVER_PORT); // Convert to network byte
-    order
-    server_addr.sin_addr.s_addr = INADDR_ANY; // Bind to any address
-
-
 
 	if((fileptr = fopen(FILENAME, "r"))==NULL)
 	{
@@ -47,36 +43,44 @@ int  main(int argc,char **argv,char **env){ // NOTE: env is the variable to be p
 	};
 	while(fscanf(fileptr, "%s %s %s %s\n", &si[i].CompleteName, &si[i].TransportProtocol, &si[i].port, &si[i].serviceMode)==4)
 	{
-	printf("%s %s %s %s\n", si[i].CompleteName, si[i].TransportProtocol, si[i].port, si[i].serviceMode);
-	if (si[i].TransportProtocol=="tcp")
-	{
-		si[i].SocketDescriptor = socket(AF_INET,SOCK_STREAM, IPPROTO_TCP);
-	}
-	else
-	{
-		si[i].SocketDescriptor = socket(AF_INET,SOCK_DGRAM, IPPROTO_UDP);
-	}
 
-	if (si[i].SocketDescriptor<0) {
-		perror("socket");
-		exit(EXIT_FAILURE);
-	}
+		printf("%s %s %s %s\n", si[i].CompleteName, si[i].TransportProtocol, si[i].port, si[i].serviceMode);
+		server_addr[i].sin_family = AF_INET;
+		server_addr[i].sin_port = htons(atoi(si[i].port)); // Convert to network byte order
+		server_addr[i].sin_addr.s_addr = INADDR_ANY; // Bind to any address
+		if (si[i].TransportProtocol=="tcp")
+		{
+			si[i].SocketDescriptor = socket(AF_INET,SOCK_STREAM, IPPROTO_TCP);
+		}
+		else
+		{
+			si[i].SocketDescriptor = socket(AF_INET,SOCK_DGRAM, IPPROTO_UDP);
+		}
 
-	br = bind(si[i].SocketDescriptor, (struct sockaddr *) &server_addr, sizeof(server_addr));
-
-	if (br < 0)
-    {
-        perror(”bind"); // Print error message
-        exit(EXIT_FAILURE);
-    }
-	lr = listen(si.[i].SocketDescriptor, BACK_LOG);
-	if (lr < 0){
-        perror("listen"); // Print error message
-        exit(EXIT_FAILURE);
-    }
-
-
-	i++;
+		if (si[i].SocketDescriptor<0) 
+		{
+			perror("socket");
+			exit(EXIT_FAILURE);
+		}
+		br = bind(si[i].SocketDescriptor, (struct sockaddr *) &server_addr[i], sizeof(server_addr[i]));
+		
+		if (br < 0)
+		{
+			perror("bind"); // Print error message
+			exit(EXIT_FAILURE);
+		}
+		if (si[i].TransportProtocol=="tcp")
+		{
+			lr = listen(si[i].SocketDescriptor, BACK_LOG);
+			
+			if (lr < 0)
+			{
+				perror("listen"); // Print error message
+				exit(EXIT_FAILURE);
+			}
+		}
+		printf("%d\n", i);
+		i++;
 	}
 
 	// Server behavior implementation goes here
