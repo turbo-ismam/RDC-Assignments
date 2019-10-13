@@ -7,12 +7,13 @@
 #include<netinet/in.h>
 #include<signal.h>
 #include<errno.h>
+#define BACK_LOG 2
 #define FILENAME "serverlist.txt"
 //Constants and global variable declaration goes here
 
 
 //Service structure definition goes here
-typedef struct 
+typedef struct
 {
 	char TransportProtocol[4];	//’tcp’ if protocol is TCP, ’udp’ if protocol is UDP
 	char serviceMode[7];		//’wait’ if service is concurrent, ‘nowait’ otherwise
@@ -31,9 +32,14 @@ int  main(int argc,char **argv,char **env){ // NOTE: env is the variable to be p
 	serviceInfo si[10];
 	int i=0, br, lr;
 	char ch;
-	
-	
 	FILE *fileptr;
+	server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(SERVER_PORT); // Convert to network byte
+    order
+    server_addr.sin_addr.s_addr = INADDR_ANY; // Bind to any address
+
+
+
 	if((fileptr = fopen(FILENAME, "r"))==NULL)
 	{
 			printf("errore apertura file");
@@ -42,7 +48,7 @@ int  main(int argc,char **argv,char **env){ // NOTE: env is the variable to be p
 	while(fscanf(fileptr, "%s %s %s %s\n", &si[i].CompleteName, &si[i].TransportProtocol, &si[i].port, &si[i].serviceMode)==4)
 	{
 	printf("%s %s %s %s\n", si[i].CompleteName, si[i].TransportProtocol, si[i].port, si[i].serviceMode);
-	if (si[i].TransportProtocol=="tcp") 
+	if (si[i].TransportProtocol=="tcp")
 	{
 		si[i].SocketDescriptor = socket(AF_INET,SOCK_STREAM, IPPROTO_TCP);
 	}
@@ -50,32 +56,44 @@ int  main(int argc,char **argv,char **env){ // NOTE: env is the variable to be p
 	{
 		si[i].SocketDescriptor = socket(AF_INET,SOCK_DGRAM, IPPROTO_UDP);
 	}
-	br= bind(si[i].SocketDescriptor, INADDR_ANY
-	
+	br = bind(si[i].SocketDescriptor, (struct sockaddr *) &server_addr, sizeof(server_addr));
+
+	if (br < 0)
+    {
+        perror(”bind"); // Print error message
+        exit(EXIT_FAILURE);
+    }
+	lr = listen(sfd, BACK_LOG);
+	if (lr < 0){
+        perror(list"); // Print error message
+        exit(EXIT_FAILURE);
+    }
+
 	if (si[i].SocketDescriptor<0) {
 		perror("socket");
 		exit(EXIT_FAILURE);
 	}
 	i++;
 	}
+
 	// Server behavior implementation goes here
-	
-	
-	
+
+
+
 	signal (SIGCHLD,handle_signal); /* Handle signals sent by son processes - call this function when it's ought to be */
-	
+
 	return 0;
 }
 
 // handle_signal implementation
 void handle_signal (int sig){
 	// Call to wait system-call goes here
-	
+
 	switch (sig) {
-		case SIGCHLD : 
-			// Implementation of SIGCHLD handling goes here	
-			
-			
+		case SIGCHLD :
+			// Implementation of SIGCHLD handling goes here
+
+
 			break;
 		default : printf ("Signal not known!\n");
 			break;
