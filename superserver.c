@@ -30,12 +30,14 @@ void handle_signal (int sig);
 int  main(int argc,char **argv,char **env){ // NOTE: env is the variable to be passed, as last argument, to execle system-call
 	// Other variables declaration goes here
 	serviceInfo si[10];
+	struct sockaddr_in server_addr[10];
+	struct fd_set fdset, fdset2;
+	pid_t pid;
 	int i=0, br, lr;
 	char ch;
-	struct sockaddr_in server_addr[10];
-	
 	FILE *fileptr;
 
+	FD_ZERO (&fdset);
 	if((fileptr = fopen(FILENAME, "r"))==NULL)
 	{
 			printf("errore apertura file");
@@ -78,6 +80,61 @@ int  main(int argc,char **argv,char **env){ // NOTE: env is the variable to be p
 				perror("listen"); // Print error message
 				exit(EXIT_FAILURE);
 			}
+			FD_SET(si[i].SocketDescriptor, &fdset);
+			
+			sr =select (FD_SETSIZE, &fdset, NULL, NULL, NULL)
+			for (i = 0; i < FD_SETSIZE; ++i)
+			{
+				if (FD_ISSET (i, &read_fd_set))
+				{
+					if (i == sock)
+					{
+						/* Connection request on original socket. */
+						int new;
+						size = sizeof (clientname);
+						new = accept (sock,
+									  (struct sockaddr *) &clientname,
+									  &size);
+						if (new < 0)
+						  {
+							perror ("accept");
+							exit (EXIT_FAILURE);
+						  }
+						fprintf (stderr,
+								 "Server: connect from host %s, port %hd.\n",
+								 inet_ntoa (clientname.sin_addr),
+								 ntohs (clientname.sin_port));
+						FD_SET (new, &active_fd_set);
+					}
+					else
+					{
+						/* Data arriving on an already-connected socket. */
+						if (read_from_client (i) < 0)
+						{
+							close (i);
+							FD_CLR (i, &fdset);
+						}
+					}
+				}
+			}
+			if ( sr < 0)
+			{
+				perror("listen"); // Print error message
+				exit(EXIT_FAILURE);
+			}
+        {
+          perror ("select");
+          exit (EXIT_FAILURE);
+        }
+
+		}
+		if (fork()==0)
+		{
+			
+		}
+		else
+		{
+			
 		}
 		printf("%d\n", i);
 		i++;
