@@ -1,0 +1,3 @@
+./tcpServer.exe tcp 10002 nowait
+./udpServer.exe udp 10003 nowait
+./app2 tcp 1000 wait

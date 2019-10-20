@@ -1,6 +1,0 @@
-./app tcp 10000 wait
-./app udp 10001 nowait
-./app tcp 10002 wait
-./app udp 10003 wait
-./app tcp 10004 wait
-./app udp 10005 wait

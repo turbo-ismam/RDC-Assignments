@@ -8,7 +8,7 @@
 #include<signal.h>
 #include<errno.h>
 #define BACK_LOG 2
-#define FILENAME "serverlist.txt"
+#define FILENAME "serverlist"
 //Constants and global variable declaration goes here
 
 
@@ -31,12 +31,12 @@ int  main(int argc,char **argv,char **env){ // NOTE: env is the variable to be p
 	// Other variables declaration goes here
 	serviceInfo si[10];
 	struct sockaddr_in server_addr[10];
-	struct fd_set fdset, fdset2;
+	struct fd_set fdset;
 	pid_t pid;
 	int i=0, br, lr;
 	char ch;
 	FILE *fileptr;
-
+		// Server behavior implementation goes here
 	FD_ZERO (&fdset);
 	if((fileptr = fopen(FILENAME, "r"))==NULL)
 	{
@@ -81,7 +81,7 @@ int  main(int argc,char **argv,char **env){ // NOTE: env is the variable to be p
 				exit(EXIT_FAILURE);
 			}
 			FD_SET(si[i].SocketDescriptor, &fdset);
-			
+			/*
 			sr =select (FD_SETSIZE, &fdset, NULL, NULL, NULL)
 			for (i = 0; i < FD_SETSIZE; ++i)
 			{
@@ -108,7 +108,7 @@ int  main(int argc,char **argv,char **env){ // NOTE: env is the variable to be p
 					}
 					else
 					{
-						/* Data arriving on an already-connected socket. */
+						/* Data arriving on an already-connected socket. 
 						if (read_from_client (i) < 0)
 						{
 							close (i);
@@ -125,26 +125,25 @@ int  main(int argc,char **argv,char **env){ // NOTE: env is the variable to be p
         {
           perror ("select");
           exit (EXIT_FAILURE);
-        }
+        }*/
 
+		signal (SIGCHLD,handle_signal); /* Handle signals sent by son processes - call this function when it's ought to be */
 		}
-		if (fork()==0)
+		while(1) 
 		{
-			
+				
+			if (fork()==0)
+			{
+				execle(si[i].CompleteName, NULL );
+			}
+			else
+			{
+				
+			}
 		}
-		else
-		{
-			
-		}
-		printf("%d\n", i);
-		i++;
+			i++;
 	}
-
-	// Server behavior implementation goes here
-
-
-
-	signal (SIGCHLD,handle_signal); /* Handle signals sent by son processes - call this function when it's ought to be */
+	
 
 	return 0;
 }
