@@ -40,7 +40,6 @@ int main(int argc, char *argv[]){
   		perror("send");
   		exit(EXIT_FAILURE);
   	}
-  }
   
   return 0;
 }

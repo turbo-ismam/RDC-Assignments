@@ -7,6 +7,7 @@
 #include<netinet/in.h>
 #include<signal.h>
 #include<errno.h>
+#include<unistd.h>
 #define BACK_LOG 2
 #define FILENAME "serverlist"
 //Constants and global variable declaration goes here
@@ -31,7 +32,7 @@ int  main(int argc,char **argv,char **env){ // NOTE: env is the variable to be p
 	// Other variables declaration goes here
 	serviceInfo si[10];
 	struct sockaddr_in server_addr[10];
-	struct fd_set fdset;
+	fd_set fdset;
 	pid_t pid;
 	int i=0, br, lr;
 	char ch;
@@ -89,7 +90,7 @@ int  main(int argc,char **argv,char **env){ // NOTE: env is the variable to be p
 				{
 					if (i == sock)
 					{
-						/* Connection request on original socket. */
+						/* Connection request on original socket. 
 						int new;
 						size = sizeof (clientname);
 						new = accept (sock,
@@ -128,23 +129,24 @@ int  main(int argc,char **argv,char **env){ // NOTE: env is the variable to be p
         }*/
 
 		signal (SIGCHLD,handle_signal); /* Handle signals sent by son processes - call this function when it's ought to be */
-		}
-		while(1) 
-		{
-				
+		}		
 			if (fork()==0)
 			{
-				execle(si[i].CompleteName, NULL );
+				close(0);
+				close(1);
+				close(2);
+				dup(si[i].SocketDescriptor);
+				dup(si[i].SocketDescriptor);
+				dup(si[i].SocketDescriptor);
+				execle(si[i].CompleteName, argc, argv, NULL, env);
 			}
 			else
 			{
 				
 			}
-		}
 			i++;
 	}
-	
-
+	sleep(10);
 	return 0;
 }
 
