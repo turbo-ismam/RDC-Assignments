@@ -8,9 +8,13 @@
 #include<signal.h>
 #include<errno.h>
 #include<unistd.h>
-#define BACK_LOG 2
-#define FILENAME "serverlist"
+
 //Constants and global variable declaration goes here
+
+#define BACK_LOG 2
+#define FD_SETSIZE 10
+#define FILENAME "serverlist"
+
 
 
 //Service structure definition goes here
@@ -32,6 +36,7 @@ int  main(int argc,char **argv,char **env){ // NOTE: env is the variable to be p
 	// Other variables declaration goes here
 	serviceInfo si[10];
 	struct sockaddr_in server_addr[10];
+	struct timeval tWait;
 	fd_set fdset;
 	pid_t pid;
 	int i=0, br, lr;
@@ -46,7 +51,6 @@ int  main(int argc,char **argv,char **env){ // NOTE: env is the variable to be p
 	};
 	while(fscanf(fileptr, "%s %s %s %s\n", &si[i].CompleteName, &si[i].TransportProtocol, &si[i].port, &si[i].serviceMode)==4)
 	{
-
 		printf("%s %s %s %s\n", si[i].CompleteName, si[i].TransportProtocol, si[i].port, si[i].serviceMode);
 		server_addr[i].sin_family = AF_INET;
 		server_addr[i].sin_port = htons(atoi(si[i].port)); // Convert to network byte order
@@ -59,38 +63,52 @@ int  main(int argc,char **argv,char **env){ // NOTE: env is the variable to be p
 		{
 			si[i].SocketDescriptor = socket(AF_INET,SOCK_DGRAM, IPPROTO_UDP);
 		}
-
+		
 		if (si[i].SocketDescriptor<0) 
 		{
 			perror("socket");
 			exit(EXIT_FAILURE);
 		}
-		br = bind(si[i].SocketDescriptor, (struct sockaddr *) &server_addr[i], sizeof(server_addr[i]));
 		
+		br = bind(si[i].SocketDescriptor, (struct sockaddr *) &server_addr[i], sizeof(server_addr[i]));
 		if (br < 0)
 		{
 			perror("bind"); // Print error message
 			exit(EXIT_FAILURE);
 		}
+		
 		if (si[i].TransportProtocol=="tcp")
 		{
 			lr = listen(si[i].SocketDescriptor, BACK_LOG);
-			
 			if (lr < 0)
 			{
 				perror("listen"); // Print error message
 				exit(EXIT_FAILURE);
 			}
-			FD_SET(si[i].SocketDescriptor, &fdset);
-			/*
-			sr =select (FD_SETSIZE, &fdset, NULL, NULL, NULL)
-			for (i = 0; i < FD_SETSIZE; ++i)
-			{
-				if (FD_ISSET (i, &read_fd_set))
+		}
+		FD_SET(si[i].SocketDescriptor, &fdset);
+		i++;
+	}//end while
+	for (;;;)
+	{
+		tWait.tv_sec = 5;
+		tWait.tv_usec = 0;
+		sr =select (FD_SETSIZE, &fdset, NULL, NULL, &tWait);
+		if ( sr < 0)
+		{
+			perror("select"); // Print error message
+			exit(EXIT_FAILURE);
+		}
+		for (i = 0; i < FD_SETSIZE; ++i) 
+		{
+			
+		}
+	}
+				if (FD_ISSET (i, &fdset))
 				{
 					if (i == sock)
 					{
-						/* Connection request on original socket. 
+						// Connection request on original socket. 
 						int new;
 						size = sizeof (clientname);
 						new = accept (sock,
@@ -118,19 +136,13 @@ int  main(int argc,char **argv,char **env){ // NOTE: env is the variable to be p
 					}
 				}
 			}
-			if ( sr < 0)
-			{
-				perror("listen"); // Print error message
-				exit(EXIT_FAILURE);
-			}
         {
           perror ("select");
           exit (EXIT_FAILURE);
         }*/
 
-		signal (SIGCHLD,handle_signal); /* Handle signals sent by son processes - call this function when it's ought to be */
-		}		
-			if (fork()==0)
+		signal (SIGCHLD,handle_signal); /* Handle signals sent by son processes - call this function when it's ought to be */		
+			if (fork()==0)	//child
 			{
 				close(0);
 				close(1);
@@ -140,13 +152,10 @@ int  main(int argc,char **argv,char **env){ // NOTE: env is the variable to be p
 				dup(si[i].SocketDescriptor);
 				execle(si[i].CompleteName, argc, argv, NULL, env);
 			}
-			else
+			else //parent
 			{
 				
 			}
-			i++;
-	}
-	sleep(10);
 	return 0;
 }
 
