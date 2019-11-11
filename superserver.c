@@ -32,7 +32,8 @@ typedef struct
 //Function prototype devoted to handle the death of the son process
 void handle_signal (int sig);
 
-int  main(int argc,char **argv,char **env){ // NOTE: env is the variable to be passed, as last argument, to execle system-call
+int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be passed, as last argument, to execle system-call
+{ 
 	// Other variables declaration goes here
 	serviceInfo si[10];
 	struct sockaddr_in server_addr[10];
@@ -102,10 +103,8 @@ int  main(int argc,char **argv,char **env){ // NOTE: env is the variable to be p
 		for (i = 0; i < FD_SETSIZE; ++i) 
 		{
 			
-		}
-	}
-				if (FD_ISSET (i, &fdset))
-				{
+			/*if (FD_ISSET (i, &fdset))
+				{*/
 					if (i == sock)
 					{
 						// Connection request on original socket. 
@@ -127,19 +126,13 @@ int  main(int argc,char **argv,char **env){ // NOTE: env is the variable to be p
 					}
 					else
 					{
+					}
+		}
 						/* Data arriving on an already-connected socket. 
 						if (read_from_client (i) < 0)
 						{
 							close (i);
 							FD_CLR (i, &fdset);
-						}
-					}
-				}
-			}
-        {
-          perror ("select");
-          exit (EXIT_FAILURE);
-        }*/
 
 		signal (SIGCHLD,handle_signal); /* Handle signals sent by son processes - call this function when it's ought to be */		
 			if (fork()==0)	//child
@@ -156,17 +149,24 @@ int  main(int argc,char **argv,char **env){ // NOTE: env is the variable to be p
 			{
 				
 			}
+	}
 	return 0;
 }
 
 // handle_signal implementation
 void handle_signal (int sig){
 	// Call to wait system-call goes here
-
+	int childPID;
 	switch (sig) {
 		case SIGCHLD :
 			// Implementation of SIGCHLD handling goes here
-
+			for(int i = 0; i < N_FD; i++)
+			{
+				if(si[i].PID == childPID && 1==1)
+				{
+					
+				}
+			}
 
 			break;
 		default : printf ("Signal not known!\n");
