@@ -4,13 +4,13 @@ udpServer.exe : udpServer.o
 	gcc -o udpServer.exe udpServer.o
 
 udpClient.exe : udpClient.o
-	gcc -o udpServer.exe udpClient.o
+	gcc -o udpClient.exe udpClient.o
 
 tcpServer.exe : tcpServer.o
 	gcc -o tcpServer.exe tcpServer.o
 
 tcpClient.exe : tcpClient.o
-	gcc -o tcpServer.exe tcpClient.o
+	gcc -o tcpClient.exe tcpClient.o
 
 tcpClient.o : tcpClient.c myfunction.h
 	gcc -c tcpClient.c

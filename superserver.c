@@ -4,7 +4,9 @@
 #include<sys/types.h>
 #include<sys/socket.h>
 #include<sys/time.h>
+#include<sys/wait.h>
 #include<netinet/in.h>
+#include<arpa/inet.h>
 #include<signal.h>
 #include<errno.h>
 #include<unistd.h>
@@ -12,9 +14,8 @@
 //Constants and global variable declaration goes here
 
 #define BACK_LOG 2
-#define FD_SETSIZE 10
+#define FDSIZE 10
 #define FILENAME "serverlist"
-
 
 
 //Service structure definition goes here
@@ -29,18 +30,21 @@ typedef struct
 	int PID;			//process ID
 } serviceInfo;
 
+serviceInfo si[FDSIZE];
+
 //Function prototype devoted to handle the death of the son process
 void handle_signal (int sig);
 
 int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be passed, as last argument, to execle system-call
 { 
 	// Other variables declaration goes here
-	serviceInfo si[10];
+	struct sockaddr_in client_addr; // struct containing client address information
 	struct sockaddr_in server_addr[10];
 	struct timeval tWait;
 	fd_set fdset;
 	pid_t pid;
-	int i=0, br, lr;
+	int i=0, br, lr, sr;
+	int sock;
 	char ch;
 	FILE *fileptr;
 		// Server behavior implementation goes here
@@ -90,28 +94,34 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 		FD_SET(si[i].SocketDescriptor, &fdset);
 		i++;
 	}//end while
-	for (;;;)
+	for (;;)
 	{
 		tWait.tv_sec = 5;
 		tWait.tv_usec = 0;
-		sr =select (FD_SETSIZE, &fdset, NULL, NULL, &tWait);
+		sr =select (FDSIZE, &fdset, NULL, NULL, &tWait);
 		if ( sr < 0)
 		{
 			perror("select"); // Print error message
 			exit(EXIT_FAILURE);
 		}
-		for (i = 0; i < FD_SETSIZE; ++i) 
+		if (sr == 0)
+		{
+			printf("Timeout expired, no pending connection on socket\n");
+		}
+		for (i = 0; i < FDSIZE; ++i) 
 		{
 			
-			/*if (FD_ISSET (i, &fdset))
-				{*/
+			if (FD_ISSET (i, &fdset))
+			{
+				printf("ERrorFDISSET\n");
+			}
 					if (i == sock)
 					{
 						// Connection request on original socket. 
 						int new;
-						size = sizeof (clientname);
-						new = accept (sock,
-									  (struct sockaddr *) &clientname,
+						int size = sizeof (client_addr);
+						new = accept (si[i].SocketDescriptor,
+									  (struct sockaddr *) &client_addr,
 									  &size);
 						if (new < 0)
 						  {
@@ -120,21 +130,15 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 						  }
 						fprintf (stderr,
 								 "Server: connect from host %s, port %hd.\n",
-								 inet_ntoa (clientname.sin_addr),
-								 ntohs (clientname.sin_port));
-						FD_SET (new, &active_fd_set);
+								 inet_ntoa (client_addr.sin_addr),
+								 ntohs (client_addr.sin_port));
 					}
 					else
 					{
 					}
 		}
-						/* Data arriving on an already-connected socket. 
-						if (read_from_client (i) < 0)
-						{
-							close (i);
-							FD_CLR (i, &fdset);
 
-		signal (SIGCHLD,handle_signal); /* Handle signals sent by son processes - call this function when it's ought to be */		
+		signal (SIGCHLD,handle_signal); // Handle signals sent by son processes - call this function when it's ought to be 		
 			if (fork()==0)	//child
 			{
 				close(0);
@@ -143,7 +147,7 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 				dup(si[i].SocketDescriptor);
 				dup(si[i].SocketDescriptor);
 				dup(si[i].SocketDescriptor);
-				execle(si[i].CompleteName, argc, argv, NULL, env);
+				execle(si[i].CompleteName, si[i].Name, argv, NULL, env);
 			}
 			else //parent
 			{
@@ -155,12 +159,13 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 
 // handle_signal implementation
 void handle_signal (int sig){
+	printf("signal is called!");
 	// Call to wait system-call goes here
-	int childPID;
+	int childPID = wait(&sig);
 	switch (sig) {
 		case SIGCHLD :
 			// Implementation of SIGCHLD handling goes here
-			for(int i = 0; i < N_FD; i++)
+			for(int i = 0; i < FDSIZE; i++)
 			{
 				if(si[i].PID == childPID && 1==1)
 				{
