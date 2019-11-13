@@ -7,7 +7,13 @@ superserver.o : superserver.c
 	gcc -c superserver.c
 
 
-.PHONY: clean
+.PHONY: clean makec maked
 
 clean:
 	rm -f superserver.exe superserver.o
+
+makec:
+	make -f MakefileSETUP
+
+maked:
+	make -f MakefileSETUP clean

@@ -38,12 +38,12 @@ void handle_signal (int sig);
 int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be passed, as last argument, to execle system-call
 { 
 	// Other variables declaration goes here
-	struct sockaddr_in client_addr; // struct containing client address information
-	struct sockaddr_in server_addr[10];
+	struct sockaddr_in client_addr, server_addr ; // struct containing client/server address information
 	struct timeval tWait;
 	fd_set fdset;
 	pid_t pid;
 	int i=0, br, lr, sr;
+	int maxfd;
 	int sock;
 	char ch;
 	FILE *fileptr;
@@ -56,10 +56,9 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 	};
 	while(fscanf(fileptr, "%s %s %s %s\n", &si[i].CompleteName, &si[i].TransportProtocol, &si[i].port, &si[i].serviceMode)==4)
 	{
-		printf("%s %s %s %s\n", si[i].CompleteName, si[i].TransportProtocol, si[i].port, si[i].serviceMode);
-		server_addr[i].sin_family = AF_INET;
-		server_addr[i].sin_port = htons(atoi(si[i].port)); // Convert to network byte order
-		server_addr[i].sin_addr.s_addr = INADDR_ANY; // Bind to any address
+		
+		strcpy(si[i].Name, "tcpServer.exe");
+		printf("%s %s %s %s %s\n", si[i].CompleteName, si[i].Name ,si[i].TransportProtocol, si[i].port, si[i].serviceMode);
 		if (si[i].TransportProtocol=="tcp")
 		{
 			si[i].SocketDescriptor = socket(AF_INET,SOCK_STREAM, IPPROTO_TCP);
@@ -68,14 +67,17 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 		{
 			si[i].SocketDescriptor = socket(AF_INET,SOCK_DGRAM, IPPROTO_UDP);
 		}
-		
+		printf("sfd:%d ", si[i].SocketDescriptor);
 		if (si[i].SocketDescriptor<0) 
 		{
 			perror("socket");
 			exit(EXIT_FAILURE);
 		}
+		server_addr.sin_family = AF_INET;
+		server_addr.sin_port = htons(atoi(si[i].port)); // Convert to network byte order
+		server_addr.sin_addr.s_addr = INADDR_ANY; // Bind to any address htonl(INADDR_ANY);
 		
-		br = bind(si[i].SocketDescriptor, (struct sockaddr *) &server_addr[i], sizeof(server_addr[i]));
+		br = bind(si[i].SocketDescriptor, (struct sockaddr *) &server_addr, sizeof(server_addr));
 		if (br < 0)
 		{
 			perror("bind"); // Print error message
@@ -94,11 +96,18 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 		FD_SET(si[i].SocketDescriptor, &fdset);
 		i++;
 	}//end while
+	maxfd=i;
+	fclose(fileptr);
+	signal (SIGCHLD,handle_signal); // Handle signals sent by son processes - call this function when it's ought to be 	
 	for (;;)
 	{
 		tWait.tv_sec = 5;
 		tWait.tv_usec = 0;
-		sr =select (FDSIZE, &fdset, NULL, NULL, &tWait);
+		printf("beforeSELECT\n");
+		fflush(stdin);
+		sr =select (maxfd+1, &fdset, NULL, NULL, NULL);
+		printf("afterSELECT\n");
+		fflush(stdin);
 		if ( sr < 0)
 		{
 			perror("select"); // Print error message
@@ -108,12 +117,12 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 		{
 			printf("Timeout expired, no pending connection on socket\n");
 		}
-		for (i = 0; i < FDSIZE; ++i) 
+		for (i = 0; i < maxfd; ++i) 
 		{
 			
 			if (FD_ISSET (i, &fdset))
 			{
-				printf("ERrorFDISSET\n");
+				printf("ErrorFDISSET\n");
 			}
 					if (i == sock)
 					{
@@ -136,11 +145,10 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 					else
 					{
 					}
-		}
-
-		signal (SIGCHLD,handle_signal); // Handle signals sent by son processes - call this function when it's ought to be 		
+		}	
 			if (fork()==0)	//child
 			{
+				printf("forking...");
 				close(0);
 				close(1);
 				close(2);
@@ -151,7 +159,7 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 			}
 			else //parent
 			{
-				
+				printf("hi!");
 			}
 	}
 	return 0;
@@ -167,6 +175,7 @@ void handle_signal (int sig){
 			// Implementation of SIGCHLD handling goes here
 			for(int i = 0; i < FDSIZE; i++)
 			{
+				printf("doing something signal--\n");
 				if(si[i].PID == childPID && 1==1)
 				{
 					
