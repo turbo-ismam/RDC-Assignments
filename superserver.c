@@ -40,7 +40,7 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 	// Other variables declaration goes here
 	struct sockaddr_in client_addr, server_addr ; // struct containing client/server address information
 	struct timeval tWait;
-	fd_set fdset;
+	fd_set active_fdset, read_fdset;
 	pid_t pid;
 	int i=0, br, lr, sr;
 	int maxfd;
@@ -48,7 +48,8 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 	char ch;
 	FILE *fileptr;
 		// Server behavior implementation goes here
-	FD_ZERO (&fdset);
+	FD_ZERO (&active_fdset);
+	FD_ZERO (&read_fdset);
 	if((fileptr = fopen(FILENAME, "r"))==NULL)
 	{
 			printf("errore apertura file");
@@ -76,7 +77,7 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 		server_addr.sin_family = AF_INET;
 		server_addr.sin_port = htons(atoi(si[i].port)); // Convert to network byte order
 		server_addr.sin_addr.s_addr = INADDR_ANY; // Bind to any address htonl(INADDR_ANY);
-		
+		printf("\n%d %d %d\n",server_addr.sin_family, server_addr.sin_port, server_addr.sin_addr.s_addr );
 		br = bind(si[i].SocketDescriptor, (struct sockaddr *) &server_addr, sizeof(server_addr));
 		if (br < 0)
 		{
@@ -93,7 +94,7 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 				exit(EXIT_FAILURE);
 			}
 		}
-		FD_SET(si[i].SocketDescriptor, &fdset);
+		FD_SET(si[i].SocketDescriptor, &active_fdset);
 		i++;
 	}//end while
 	maxfd=i;
@@ -101,11 +102,12 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 	signal (SIGCHLD,handle_signal); // Handle signals sent by son processes - call this function when it's ought to be 	
 	for (;;)
 	{
+		read_fdset = active_fdset;
 		tWait.tv_sec = 5;
 		tWait.tv_usec = 0;
 		printf("beforeSELECT\n");
 		fflush(stdin);
-		sr =select (maxfd+1, &fdset, NULL, NULL, NULL);
+		sr =select (maxfd+1, &read_fdset, NULL, NULL, NULL);
 		printf("afterSELECT\n");
 		fflush(stdin);
 		if ( sr < 0)
@@ -120,7 +122,7 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 		for (i = 0; i < maxfd; ++i) 
 		{
 			
-			if (FD_ISSET (i, &fdset))
+			if (FD_ISSET (i, &read_fdset))
 			{
 				printf("ErrorFDISSET\n");
 			}
@@ -144,6 +146,7 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 					}
 					else
 					{
+						printf("ciaooo");
 					}
 		}	
 			if (fork()==0)	//child
