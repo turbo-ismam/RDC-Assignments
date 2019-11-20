@@ -75,9 +75,10 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 			exit(EXIT_FAILURE);
 		}
 		server_addr.sin_family = AF_INET;
+		int atoi1 = atoi(si[i].port);
 		server_addr.sin_port = htons(atoi(si[i].port)); // Convert to network byte order
-		server_addr.sin_addr.s_addr = INADDR_ANY; // Bind to any address htonl(INADDR_ANY);
-		printf("\n%d %d %d\n",server_addr.sin_family, server_addr.sin_port, server_addr.sin_addr.s_addr );
+		server_addr.sin_addr.s_addr = htonl(INADDR_ANY); // Bind to any address htonl(INADDR_ANY);
+		printf("\n%d \n", atoi1);
 		br = bind(si[i].SocketDescriptor, (struct sockaddr *) &server_addr, sizeof(server_addr));
 		if (br < 0)
 		{
