@@ -43,10 +43,12 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 	fd_set active_fdset, read_fdset;
 	pid_t pid;
 	int i=0, br, lr, sr;
-	int maxfd;
+	int maxfd=0;
+	int nfd;
 	int sock;
 	char ch;
 	FILE *fileptr;
+	
 		// Server behavior implementation goes here
 	FD_ZERO (&active_fdset);
 	FD_ZERO (&read_fdset);
@@ -55,20 +57,29 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 			printf("errore apertura file");
 			exit(1);
 	};
-	while(fscanf(fileptr, "%s %s %s %s\n", &si[i].CompleteName, &si[i].TransportProtocol, &si[i].port, &si[i].serviceMode)==4)
+	
+	while(fscanf(fileptr, "%s %s %s %s\n", si[i].CompleteName, si[i].TransportProtocol, si[i].port, si[i].serviceMode)==4)
 	{
 		
 		strcpy(si[i].Name, "tcpServer.exe");
 		printf("%s %s %s %s %s\n", si[i].CompleteName, si[i].Name ,si[i].TransportProtocol, si[i].port, si[i].serviceMode);
-		if (si[i].TransportProtocol=="tcp")
+		if (strcmp(si[i].TransportProtocol,"tcp")==0)
 		{
+			printf("LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL");
 			si[i].SocketDescriptor = socket(AF_INET,SOCK_STREAM, IPPROTO_TCP);
 		}
 		else
 		{
 			si[i].SocketDescriptor = socket(AF_INET,SOCK_DGRAM, IPPROTO_UDP);
 		}
+		
+		if(si[i].SocketDescriptor> maxfd)
+		{
+			maxfd=si[i].SocketDescriptor;
+		}
+		
 		printf("sfd:%d ", si[i].SocketDescriptor);
+		
 		if (si[i].SocketDescriptor<0) 
 		{
 			perror("socket");
@@ -80,14 +91,15 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 		server_addr.sin_addr.s_addr = htonl(INADDR_ANY); // Bind to any address htonl(INADDR_ANY);
 		printf("\n%d \n", atoi1);
 		br = bind(si[i].SocketDescriptor, (struct sockaddr *) &server_addr, sizeof(server_addr));
+		
 		if (br < 0)
 		{
 			perror("bind"); // Print error message
 			exit(EXIT_FAILURE);
 		}
-		
-		if (si[i].TransportProtocol=="tcp")
+		if (strcmp(si[i].TransportProtocol,"tcp")==0)
 		{
+			
 			lr = listen(si[i].SocketDescriptor, BACK_LOG);
 			if (lr < 0)
 			{
@@ -98,73 +110,64 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 		FD_SET(si[i].SocketDescriptor, &active_fdset);
 		i++;
 	}//end while
-	maxfd=i;
 	fclose(fileptr);
-	signal (SIGCHLD,handle_signal); // Handle signals sent by son processes - call this function when it's ought to be 	
+	//signal (SIGCHLD,handle_signal); // Handle signals sent by son processes - call this function when it's ought to be 	
+	nfd=i;
 	for (;;)
 	{
 		read_fdset = active_fdset;
 		tWait.tv_sec = 5;
 		tWait.tv_usec = 0;
-		printf("beforeSELECT\n");
-		fflush(stdin);
-		sr =select (maxfd+1, &read_fdset, NULL, NULL, NULL);
-		printf("afterSELECT\n");
-		fflush(stdin);
+		sr =select (maxfd+1, &read_fdset, NULL, NULL, NULL);							//SELECT
+		
 		if ( sr < 0)
 		{
 			perror("select"); // Print error message
 			exit(EXIT_FAILURE);
 		}
+		
 		if (sr == 0)
 		{
 			printf("Timeout expired, no pending connection on socket\n");
 		}
-		for (i = 0; i < maxfd; ++i) 
+		for (i = 0; i < nfd; i++) 
 		{
-			
-			if (FD_ISSET (i, &read_fdset))
+			printf("Checking socket...");
+			if (!FD_ISSET (i, &read_fdset))
+			{
+				// Connection request on original socket. 
+				int new;
+				int size = sizeof (client_addr);
+				new = accept (si[i].SocketDescriptor,(struct sockaddr *) &client_addr, &size);
+				if (new < 0)
+				{
+					perror ("accept");
+					exit (EXIT_FAILURE);
+				}
+				if (fork()==0)	//child
+				{
+					fprintf(stderr,"forking...");
+					close(0);
+					close(1);
+					close(2);
+					dup(si[i].SocketDescriptor);
+					dup(si[i].SocketDescriptor);
+					dup(si[i].SocketDescriptor);
+					execle(si[i].CompleteName, si[i].Name, argv, NULL, env);
+					fprintf(stderr, "hello from the other side");
+				}
+				else //parent
+				{
+					printf("hi!");
+				}
+				fprintf (stderr,"Server: connect from host %s, port %hd.\n", inet_ntoa (client_addr.sin_addr), ntohs (client_addr.sin_port));
+			}
+			else
 			{
 				printf("ErrorFDISSET\n");
+				exit(1);
 			}
-					if (i == sock)
-					{
-						// Connection request on original socket. 
-						int new;
-						int size = sizeof (client_addr);
-						new = accept (si[i].SocketDescriptor,
-									  (struct sockaddr *) &client_addr,
-									  &size);
-						if (new < 0)
-						  {
-							perror ("accept");
-							exit (EXIT_FAILURE);
-						  }
-						fprintf (stderr,
-								 "Server: connect from host %s, port %hd.\n",
-								 inet_ntoa (client_addr.sin_addr),
-								 ntohs (client_addr.sin_port));
-					}
-					else
-					{
-						printf("ciaooo");
-					}
 		}	
-			if (fork()==0)	//child
-			{
-				printf("forking...");
-				close(0);
-				close(1);
-				close(2);
-				dup(si[i].SocketDescriptor);
-				dup(si[i].SocketDescriptor);
-				dup(si[i].SocketDescriptor);
-				execle(si[i].CompleteName, si[i].Name, argv, NULL, env);
-			}
-			else //parent
-			{
-				printf("hi!");
-			}
 	}
 	return 0;
 }
@@ -174,6 +177,7 @@ void handle_signal (int sig){
 	printf("signal is called!");
 	// Call to wait system-call goes here
 	int childPID = wait(&sig);
+	printf("sig:%d", sig);
 	switch (sig) {
 		case SIGCHLD :
 			// Implementation of SIGCHLD handling goes here
