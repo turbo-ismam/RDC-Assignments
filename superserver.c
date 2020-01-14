@@ -47,6 +47,7 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 	int new;
 	int nfd;
 	int sock;
+	socklen_t size;
 	char ch;
 	FILE *fileptr;
 	
@@ -66,7 +67,6 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 		printf("%s %s %s %s %s\n", si[i].CompleteName, si[i].Name ,si[i].TransportProtocol, si[i].port, si[i].serviceMode);
 		if (strcmp(si[i].TransportProtocol,"tcp")==0)
 		{
-			printf("LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL");
 			si[i].SocketDescriptor = socket(AF_INET,SOCK_STREAM, IPPROTO_TCP);
 		}
 		else
@@ -90,7 +90,6 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 		int atoi1 = atoi(si[i].port);
 		server_addr.sin_port = htons(atoi(si[i].port)); // Convert to network byte order
 		server_addr.sin_addr.s_addr = htonl(INADDR_ANY); // Bind to any address htonl(INADDR_ANY);
-		printf("\n%d \n", atoi1);
 		br = bind(si[i].SocketDescriptor, (struct sockaddr *) &server_addr, sizeof(server_addr));
 		
 		if (br < 0)
@@ -137,9 +136,9 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 			if (!FD_ISSET (i, &read_fdset))
 			{
 				// Connection request on original socket. 
-				int size = sizeof (client_addr);
 				if (strcmp(si[i].TransportProtocol,"tcp") == 0){
-						new = accept (si[i].SocketDescriptor,(struct sockaddr *) &client_addr, &size);
+						size = sizeof(server_addr);
+						new = accept (si[i].SocketDescriptor,(struct sockaddr *) &server_addr, &size);
 					}
 				
 				if (new < 0)
@@ -154,10 +153,20 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 					close(0);
 					close(1);
 					close(2);
-					dup(si[i].SocketDescriptor);
-					dup(si[i].SocketDescriptor);
-					dup(si[i].SocketDescriptor);
-					er = execle(si[i].CompleteName, si[i].Name, argv, NULL, env);
+					if(strcmp(si[i].TransportProtocol, "tcp")==0)
+					{
+						dup(new);
+						dup(new);
+						dup(new);
+					}
+					else 
+					{
+						dup(si[i].SocketDescriptor);
+						dup(si[i].SocketDescriptor);
+						dup(si[i].SocketDescriptor);
+					}
+					
+					er = execle(si[i].CompleteName, si[i].Name, NULL, env);
 					if (er < 0) {
 								printf("Execle error!");
 								exit(EXIT_FAILURE);
@@ -171,12 +180,11 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 								close(new);
 							}
 							if (strcmp(si[i].serviceMode, "wait") == 0){
-								si[i].pid = pid;
+								si[i].PID = pid;
 								FD_CLR(si[i].SocketDescriptor, &active_fdset);
 								si[i].SocketDescriptor=0;
 							}
 				}
-				fprintf (stderr,"Server: connect from host %s, port %hd.\n", inet_ntoa (client_addr.sin_addr), ntohs (client_addr.sin_port));
 			}
 			else
 			{
