@@ -38,12 +38,13 @@ void handle_signal (int sig);
 int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be passed, as last argument, to execle system-call
 { 
 	// Other variables declaration goes here
-	struct sockaddr_in client_addr, server_addr ; // struct containing client/server address information
+	struct sockaddr_in server_addr ; // struct containing client/server address information
 	struct timeval tWait;
 	fd_set active_fdset, read_fdset;
 	pid_t pid;
-	int i=0, br, lr, sr;
+	int i=0, br, lr, sr, er;
 	int maxfd=0;
+	int new;
 	int nfd;
 	int sock;
 	char ch;
@@ -111,7 +112,7 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 		i++;
 	}//end while
 	fclose(fileptr);
-	//signal (SIGCHLD,handle_signal); // Handle signals sent by son processes - call this function when it's ought to be 	
+	signal (SIGCHLD,handle_signal); // Handle signals sent by son processes - call this function when it's ought to be 	
 	nfd=i;
 	for (;;)
 	{
@@ -119,7 +120,7 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 		tWait.tv_sec = 5;
 		tWait.tv_usec = 0;
 		sr =select (maxfd+1, &read_fdset, NULL, NULL, NULL);							//SELECT
-		
+
 		if ( sr < 0)
 		{
 			perror("select"); // Print error message
@@ -136,15 +137,18 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 			if (!FD_ISSET (i, &read_fdset))
 			{
 				// Connection request on original socket. 
-				int new;
 				int size = sizeof (client_addr);
-				new = accept (si[i].SocketDescriptor,(struct sockaddr *) &client_addr, &size);
+				if (strcmp(si[i].TransportProtocol,"tcp") == 0){
+						new = accept (si[i].SocketDescriptor,(struct sockaddr *) &client_addr, &size);
+					}
+				
 				if (new < 0)
 				{
 					perror ("accept");
 					exit (EXIT_FAILURE);
 				}
-				if (fork()==0)	//child
+				pid=fork();
+				if (pid==0)	//child
 				{
 					fprintf(stderr,"forking...");
 					close(0);
@@ -153,12 +157,24 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 					dup(si[i].SocketDescriptor);
 					dup(si[i].SocketDescriptor);
 					dup(si[i].SocketDescriptor);
-					execle(si[i].CompleteName, si[i].Name, argv, NULL, env);
+					er = execle(si[i].CompleteName, si[i].Name, argv, NULL, env);
+					if (er < 0) {
+								printf("Execle error!");
+								exit(EXIT_FAILURE);
+							}
 					fprintf(stderr, "hello from the other side");
 				}
 				else //parent
 				{
-					printf("hi!");
+					sleep(1);
+					if (strcmp(si[i].TransportProtocol, "tcp") == 0) {
+								close(new);
+							}
+							if (strcmp(si[i].serviceMode, "wait") == 0){
+								si[i].pid = pid;
+								FD_CLR(si[i].SocketDescriptor, &active_fdset);
+								si[i].SocketDescriptor=0;
+							}
 				}
 				fprintf (stderr,"Server: connect from host %s, port %hd.\n", inet_ntoa (client_addr.sin_addr), ntohs (client_addr.sin_port));
 			}
