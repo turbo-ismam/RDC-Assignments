@@ -2,19 +2,21 @@
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <arpa/inet.h>
 #include <netinet/in.h>
 
-#include "myfunction.h"
-
 #define MAX_BUF_SIZE 1024 
-
 #define SERVER_PORT 7777
+
+#define BACK_LOG 2
 
 int main(int argc, char *argv[])
 {
 	struct sockaddr_in client_addr; // struct containing client address information
+	struct sockaddr_in server_addr; // struct containing server address information
 	int sfd; // Socket file descriptor
 	int newsfd; //client communication socket - accept result
 	int i;
@@ -30,6 +32,13 @@ int main(int argc, char *argv[])
 	server_addr.sin_family = AF_INET;
 	server_addr.sin_port = htons(SERVER_PORT); // Convert to network byte order
 	server_addr.sin_addr.s_addr = INADDR_ANY; // Bind to any address
+	
+	sfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (sfd < 0)
+	{
+		perror("socket"); // Print error message
+		exit(EXIT_FAILURE);
+	}
 
 	br = bind(sfd, (struct sockaddr *) &server_addr, sizeof(server_addr));
 	if (br < 0)
@@ -44,7 +53,6 @@ int main(int argc, char *argv[])
 		printf("listen error"); // Print error message
 		exit(EXIT_FAILURE);
 	}
-
 	for(;;) // Wait for incoming requests
 	{ 
 		newsfd = accept(sfd, (struct sockaddr *) &client_addr, &cli_size);
@@ -64,18 +72,18 @@ int main(int argc, char *argv[])
 				exit(EXIT_FAILURE);
 			}
 			printf("Received data: ");
-			printData(receivedData, byteRecv);
-			if(strncmp(receivedData, "exit", byteRecv) == 0
+			printf("%s",receivedData);
+			if(strncmp(receivedData, "exit", byteRecv) == 0)
 			{
 				printf("Command to stop server received\n");
 				close(newsfd);
 				break;
 			}
-			convertToUpperCase(receivedData, byteRecv);
+			//convertToUpperCase(receivedData, byteRecv);
 			printf("Response to be sent back to client: ");
-			printData(receivedData, byteRecv);
+			//printData(receivedData, byteRecv);
 			byteSent = send(newsfd, receivedData, byteRecv, 0);
-			if(byteSent != byteRecv
+			if(byteSent != byteRecv)
 			{
 				perror("send");
 				exit(EXIT_FAILURE);

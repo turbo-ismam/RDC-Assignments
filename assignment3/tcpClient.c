@@ -2,14 +2,14 @@
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
-#include "myfunction.h"
 
 #define MAX_BUF_SIZE 1024 // Maximum size of UDP messages
-#define SERVER_PORT 7575
+#define SERVER_PORT 7777
 
 
 int main(int argc, char *argv[]){
@@ -47,14 +47,14 @@ int main(int argc, char *argv[]){
 
   
   while(!stop){
-    sendData="h rtt 5 10 0"; //<protocol_phase> <sp> <measure_type> rtt/thput <sp> <n_probes> <sp> <msg_size> <sp> <server_delay>
+    strcpy(sendData, "h rtt 5 10 0"); //<protocol_phase> <sp> <measure_type> rtt/thput <sp> <n_probes> <sp> <msg_size> <sp> <server_delay>
   	printf("String going to be sent to server: %s\n", sendData);
   	
   	if(strcmp(sendData, "exit") == 0){
   		stop = 1;
   	}
   	strcat(sendData, "\0");
-  	msgLen = countStrLen(sendData);
+  	msgLen = strlen(sendData);
   
   	byteSent = send(sfd, sendData, msgLen, 0);
   	printf("Bytes sent to server: %zd\n", byteSent);
@@ -62,8 +62,8 @@ int main(int argc, char *argv[]){
   	if(!stop){
   		byteRecv = recv(sfd, receivedData, MAX_BUF_SIZE, 0);
   		perror("Received from server: ");
-  		printData(receivedData, byteRecv);
-  	}	
+  		printf("%s, %lu", receivedData, byteRecv);
+  	}
   }
   close(sfd);
   return 0;
