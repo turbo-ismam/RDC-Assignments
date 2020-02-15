@@ -13,16 +13,16 @@ tcpClient.exe : tcpClient.o
 	gcc -o tcpClient.exe tcpClient.o
 
 tcpClient.o : tcpClient.c myfunction.h
-	gcc -c tcpClient.c
+	gcc -c tcpClient.c -lmyfunction
 
 tcpServer.o : tcpServer.c myfunction.h
-	gcc -c tcpServer.c
+	gcc -c tcpServer.c -lmyfunction
 
 udpClient.o : udpClient.c myfunction.h
-	gcc -c udpClient.c
+	gcc -c udpClient.c -lmyfunction
 
 udpServer.o : udpServer.c myfunction.h
-	gcc -c udpServer.c
+	gcc -c udpServer.c -lmyfunction
 
 .PHONY: clean
 

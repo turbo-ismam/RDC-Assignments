@@ -19,6 +19,8 @@ int main(int argc, char *argv[])
 	struct sockaddr_in server_addr; // struct containing server address information
 	int sfd; // Socket file descriptor
 	int newsfd; //client communication socket - accept result
+	int errorFlag=0;
+	int words;
 	int i;
 	int br, lr; //error control params
 	ssize_t byteRecv; // Number of bytes received
@@ -49,10 +51,14 @@ int main(int argc, char *argv[])
 	cli_size = sizeof(client_addr);
 	// Listen for incoming requests
 	lr = listen(sfd, BACK_LOG);
-	if (lr < 0){
+	if (lr < 0)
+	{
 		printf("listen error"); // Print error message
 		exit(EXIT_FAILURE);
 	}
+	printf("listening...");
+	fflush(stdout);
+	
 	for(;;) // Wait for incoming requests
 	{ 
 		newsfd = accept(sfd, (struct sockaddr *) &client_addr, &cli_size);
@@ -72,14 +78,61 @@ int main(int argc, char *argv[])
 				exit(EXIT_FAILURE);
 			}
 			printf("Received data: ");
-			printf("%s",receivedData);
+			printf("%s %lu\n",receivedData, byteRecv);
+			words=0;
+			for (i=0; i < strlen(receivedData); i++)  //Count words
+			{
+				if (receivedData[i] == ' ') 
+				{
+					words++;
+				}
+			}
 			if(strncmp(receivedData, "exit", byteRecv) == 0)
 			{
 				printf("Command to stop server received\n");
 				close(newsfd);
 				break;
 			}
-			//convertToUpperCase(receivedData, byteRecv);
+			if(words==4)
+			{
+				char * phase = strtok(receivedData," ");
+				if(strcmp(phase, "h")!=0)
+				{
+					errorFlag=1;
+				}
+				char * type = strtok(NULL, " ");
+				if(strcmp(type, "rtt")!=0 && strcmp(type, "thput")!=0)
+				{
+					errorFlag=1;
+				}
+				char * n_probes = strtok(NULL, " ");
+				if(atoi(n_probes)<0)
+				{
+					errorFlag=1;
+				}
+				char * msg_size = strtok(NULL, " ");
+				if(atoi(msg_size)<0)
+				{
+					
+				}
+				char * server_delay = strtok(NULL, " ");
+				if(atoi(server_delay)<0)
+				{
+					errorFlag=1;
+				}
+				if(errorFlag==0)
+				{
+					//measure phase
+				}
+				else 
+				{
+					exit(EXIT_FAILURE);
+				}
+			}
+			else
+			{
+				exit(EXIT_FAILURE);
+			}
 			printf("Response to be sent back to client: ");
 			//printData(receivedData, byteRecv);
 			byteSent = send(newsfd, receivedData, byteRecv, 0);

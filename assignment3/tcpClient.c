@@ -53,7 +53,7 @@ int main(int argc, char *argv[]){
   	if(strcmp(sendData, "exit") == 0){
   		stop = 1;
   	}
-  	strcat(sendData, "\0");
+  	strcat(sendData, "\n");
   	msgLen = strlen(sendData);
   
   	byteSent = send(sfd, sendData, msgLen, 0);
