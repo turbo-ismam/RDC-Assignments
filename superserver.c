@@ -17,7 +17,7 @@
 #define FDSIZE 10
 #define FILENAME "serverlist"
 
-
+fd_set read_fdset;
 //Service structure definition goes here
 typedef struct
 {
@@ -40,7 +40,6 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 	// Other variables declaration goes here
 	struct sockaddr_in server_addr ; // struct containing client/server address information
 	struct timeval tWait;
-	fd_set read_fdset;
 	pid_t pid;
 	int i=0, br, lr, sr, er;
 	int maxfd=0;
@@ -62,7 +61,7 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 	while(fscanf(fileptr, "%s %s %s %s\n", si[i].CompleteName, si[i].TransportProtocol, si[i].port, si[i].serviceMode)==4)
 	{
 		
-		strcpy(si[i].Name, "tcpServer.exe");
+		strcpy(si[i].Name, si[i].CompleteName+2); //salta i primi 2 caratteri e copia il nome del servizio
 		printf("%s %s %s %s %s\n", si[i].CompleteName, si[i].Name ,si[i].TransportProtocol, si[i].port, si[i].serviceMode);
 		if (strcmp(si[i].TransportProtocol,"tcp")==0)
 		{
@@ -201,7 +200,7 @@ void handle_signal (int sig){
 				printf("doing something signal--\n");
 				if(si[i].PID == childPID && strcmp(si[i].serviceMode, "wait")==0)
 				{
-					FD_SET(services[i].SocketDescriptor, &read_fdset);
+					FD_SET(si[i].SocketDescriptor, &read_fdset);
 					
 				}
 			}
