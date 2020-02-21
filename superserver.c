@@ -40,7 +40,7 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 	// Other variables declaration goes here
 	struct sockaddr_in server_addr ; // struct containing client/server address information
 	struct timeval tWait;
-	fd_set active_fdset, read_fdset;
+	fd_set read_fdset;
 	pid_t pid;
 	int i=0, br, lr, sr, er;
 	int maxfd=0;
@@ -52,7 +52,6 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 	FILE *fileptr;
 	
 		// Server behavior implementation goes here
-	FD_ZERO (&active_fdset);
 	FD_ZERO (&read_fdset);
 	if((fileptr = fopen(FILENAME, "r"))==NULL)
 	{
@@ -107,7 +106,7 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 				exit(EXIT_FAILURE);
 			}
 		}
-		FD_SET(si[i].SocketDescriptor, &active_fdset);
+		FD_SET(si[i].SocketDescriptor, &read_fdset);
 		i++;
 	}//end while
 	fclose(fileptr);
@@ -115,7 +114,6 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 	nfd=i;
 	for (;;)
 	{
-		read_fdset = active_fdset;
 		tWait.tv_sec = 5;
 		tWait.tv_usec = 0;
 		sr =select (maxfd+1, &read_fdset, NULL, NULL, NULL);							//SELECT
@@ -125,7 +123,6 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 			perror("select"); // Print error message
 			exit(EXIT_FAILURE);
 		}
-		
 		if (sr == 0)
 		{
 			printf("Timeout expired, no pending connection on socket\n");
@@ -171,7 +168,6 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 								printf("Execle error!");
 								exit(EXIT_FAILURE);
 							}
-					fprintf(stderr, "hello from the other side");
 				}
 				else //parent
 				{
@@ -181,15 +177,10 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 							}
 							if (strcmp(si[i].serviceMode, "wait") == 0){
 								si[i].PID = pid;
-								FD_CLR(si[i].SocketDescriptor, &active_fdset);
+								FD_CLR(si[i].SocketDescriptor, &read_fdset);
 								si[i].SocketDescriptor=0;
 							}
 				}
-			}
-			else
-			{
-				printf("ErrorFDISSET\n");
-				exit(1);
 			}
 		}	
 	}
@@ -200,16 +191,17 @@ int  main(int argc,char **argv,char **env) // NOTE: env is the variable to be pa
 void handle_signal (int sig){
 	printf("signal is called!");
 	// Call to wait system-call goes here
-	int childPID = wait(&sig);
-	printf("sig:%d", sig);
+	pid_t childPID = wait(&sig);
+	printf("killing process:%d", childPID);
 	switch (sig) {
 		case SIGCHLD :
 			// Implementation of SIGCHLD handling goes here
 			for(int i = 0; i < FDSIZE; i++)
 			{
 				printf("doing something signal--\n");
-				if(si[i].PID == childPID && 1==1)
+				if(si[i].PID == childPID && strcmp(si[i].serviceMode, "wait")==0)
 				{
+					FD_SET(services[i].SocketDescriptor, &read_fdset);
 					
 				}
 			}
