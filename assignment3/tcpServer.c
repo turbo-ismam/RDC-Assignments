@@ -28,6 +28,8 @@ int main(int argc, char *argv[])
 	socklen_t cli_size;
 	char receivedData [MAX_BUF_SIZE]; // Data to be received
 	char sendData [MAX_BUF_SIZE]; // Data to be sent
+	char extractData [MAX_BUF_SIZE];
+	char message[MAX_BUF_SIZE];
 	char clientName[50];
 
 	// Initialize server address information 
@@ -68,7 +70,7 @@ int main(int argc, char *argv[])
 			exit(EXIT_FAILURE);
 		}
 		inet_ntop(AF_INET, &client_addr.sin_addr, clientName, cli_size); /* Gets ip of client */
-		printf("Client IP address: %s, port: %d\n",  clientName, ntohs(client_addr.sin_port));
+		printf("Client IP    mn address: %s, port: %d\n",  clientName, ntohs(client_addr.sin_port));
 		while(1)
 		{
 			byteRecv = recv(newsfd, receivedData, sizeof(receivedData), 0);
@@ -113,7 +115,7 @@ int main(int argc, char *argv[])
 				char * msg_size = strtok(NULL, " ");
 				if(atoi(msg_size)<0)
 				{
-					
+					errorFlag=1;
 				}
 				char * server_delay = strtok(NULL, " ");
 				if(atoi(server_delay)<0)
@@ -122,10 +124,49 @@ int main(int argc, char *argv[])
 				}
 				if(errorFlag==0)
 				{
-					//measure phase
+					message = "200 OK - Ready";
+					send(newsfd, message, strlen(message), 0);
+					int n = 1;
+					size_t MeasureByteRecv;
+					size_t MeasureByteSent;
+					char receivedData[MAX_BUF_SIZE];
+					char temp_string[MAX_BUF_SIZE];
+					while(n <= n_probes)
+					{
+						byteRecv = recv(newsfd, receivedData, sizeof(receivedData), 0);
+						strcpy(extractData, receivedData)
+						strtok(extractData, " ");
+						receivedNumber = atoi(strtok(NULL, " "));
+						printf("Received number: %d, Expected number: %d\n", receivedNumber,n);
+						if (n_arrived != n_pack)
+						{
+							printf("Error sequence number!\n");
+							close(newsfd);
+							close(sfd);
+							exit(EXIT_FAILURE);
+						} 
+						else 
+						{
+							sleep(server_delay);
+							printf("Measure response: %s", receivedData);
+							byteSent = send(newsfd, receivedData, byteRecv, 0);
+						}
+						n++;
+					}
+					//bye phase
+					byteRecv = recv(newsfd, receivedData, sizeof(receivedData), 0);
+					printf("Received data: %s", receivedData);
+					close(sfd);
+					close(newsfd);
+					exit(EXIT_SUCCESS);
+
 				}
 				else 
 				{
+					message = "404 ERROR - Invalid hello message";
+					send(newsfd, message, strlen(message), 0);
+					close(sfd);
+					close(newsfd);
 					exit(EXIT_FAILURE);
 				}
 			}
@@ -136,11 +177,6 @@ int main(int argc, char *argv[])
 			printf("Response to be sent back to client: ");
 			//printData(receivedData, byteRecv);
 			byteSent = send(newsfd, receivedData, byteRecv, 0);
-			if(byteSent != byteRecv)
-			{
-				perror("send");
-				exit(EXIT_FAILURE);
-			}
 		}
 	} // End of for(;;)
 		close(sfd);
