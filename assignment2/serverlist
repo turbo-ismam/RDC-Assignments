@@ -1,0 +1,4 @@
+./tcpServer.exe tcp 7776 nowait
+./tcpServer.exe tcp 7777 wait
+./udpServer.exe udp 7778 nowait
+./udpServer.exe udp 7779 wait
