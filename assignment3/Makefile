@@ -15,4 +15,4 @@ tcpServer.o : tcpServer.c
 .PHONY: clean
 
 clean:
-	rm -f tcpClient.exe tcpServer.exe
+	rm -f tcpClient.exe tcpServer.exe tcpClient.o tcpServer.o

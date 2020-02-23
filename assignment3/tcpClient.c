@@ -7,7 +7,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
-#include <time.h>
+#include <sys/time.h>
 
 #define MAX_BUF_SIZE 50000 // Maximum size of UDP messages
 #define SERVER_PORT 7777
@@ -62,7 +62,7 @@ int main(int argc, char *argv[]){
 
   
   while(!stop){
-    strcpy(sendData, "h rtt 20 1000 0\n\0"); //<protocol_phase> <sp> <measure_type> rtt/thput <sp> <n_probes> <sp> <msg_size> <sp> <server_delay>
+    strcpy(sendData, "h thput 20 1024 0\n\0"); //<protocol_phase> <sp> <measure_type> rtt/thput <sp> <n_probes> <sp> <msg_size> <sp> <server_delay>
   	printf("String sent to server: %s\n", sendData);
   	
   	if(strcmp(sendData, "exit") == 0){
@@ -109,24 +109,25 @@ int main(int argc, char *argv[]){
 			  strcat(message, payload);
 			  strcat(message, "\n\0");
 			  msgLen= strlen(message);
-			  clock_t start = clock();
+			  struct timeval start, end;
+			  gettimeofday(&start, NULL);	
 			  byteSent = send(sfd, message, msgLen, 0);
 			  printf("packet %d sent\n", n);
 			  byteRecv = recv(sfd, receivedData, sizeof(receivedData), 0);
 			  printf("packet %d received\n", n);
-			  clock_t end = clock();
-			  rtt = (double)(end - start) / CLOCKS_PER_SEC;
+			  gettimeofday(&end, NULL);	
+			  rtt = (float)(end.tv_usec - start.tv_usec)/1000;
 			  total_rtt += rtt;
-			  printf("RTT: %f microseconds\n", rtt*1000);
+			  printf("RTT: %f milliseconds\n", rtt);
 			  n++;
 			}
 			if(strcmp(measureType,"rtt") == 0)
 			{
-				printf("Avg rtt: %f microseconds\n", total_rtt/n_probes*1000);
+				printf("Avg rtt: %f milliseconds\n", total_rtt/n_probes);
 			}
 			else
 			{
-			  printf("Avg thput: %f Kbyte/s\n", (strlen(message)/1024)/(total_rtt/n_probes));
+			  printf("Avg thput: %f Kbyte/s\n", (float)((float)strlen(message)/1024)/((total_rtt/n_probes)/1000));
 			}
 			//bye phase
 			strcpy(sendData, "b\n\0");
