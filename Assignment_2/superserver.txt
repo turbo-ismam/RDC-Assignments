@@ -1,4 +1,0 @@
-./tcpServer.exe tcp 5675 wait
-./tcpServer.exe tcp 5676 nowait
-./udpServer.exe udp 5677 wait
-./udpServer.exe udp 5678 nowait
