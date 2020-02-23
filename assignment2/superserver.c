@@ -15,7 +15,7 @@
 
 #define BACK_LOG 2
 #define FDSIZE 10
-#define FILENAME "serverlist"
+#define FILENAME "serverlist.txt"
 
 fd_set read_fdset;
 //Service structure definition goes here
