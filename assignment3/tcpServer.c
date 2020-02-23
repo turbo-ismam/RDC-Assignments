@@ -8,10 +8,18 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
-#define MAX_BUF_SIZE 1024 
+
+#define MAX_BUF_SIZE 50000 
 #define SERVER_PORT 7777
 
 #define BACK_LOG 2
+
+void printData(char *str, size_t numBytes){
+	for(int i = 0; i < numBytes; i++){
+		printf("%c", str[i]);
+	}
+	printf("\n");
+}
 
 int main(int argc, char *argv[])
 {
@@ -30,7 +38,7 @@ int main(int argc, char *argv[])
 	char sendData [MAX_BUF_SIZE]; // Data to be sent
 	char extractData [MAX_BUF_SIZE];
 	char message[MAX_BUF_SIZE];
-	char clientName[50];
+	char clientName[MAX_BUF_SIZE];
 
 	// Initialize server address information 
 	server_addr.sin_family = AF_INET;
@@ -80,7 +88,7 @@ int main(int argc, char *argv[])
 				exit(EXIT_FAILURE);
 			}
 			printf("Received data: ");
-			printf("%s %lu\n",receivedData, byteRecv);
+			printData(receivedData, byteRecv);
 			words=0;
 			for (i=0; i < strlen(receivedData); i++)  //Count words
 			{
@@ -97,48 +105,50 @@ int main(int argc, char *argv[])
 			}
 			if(words==4)
 			{
-				char * phase = strtok(receivedData," ");
+				char phase[MAX_BUF_SIZE];
+				strcpy(phase, strtok(receivedData," "));
 				if(strcmp(phase, "h")!=0)
 				{
 					errorFlag=1;
 				}
-				char * type = strtok(NULL, " ");
+				char type[MAX_BUF_SIZE];
+				strcpy(type, strtok(NULL, " "));
 				if(strcmp(type, "rtt")!=0 && strcmp(type, "thput")!=0)
 				{
 					errorFlag=1;
 				}
-				char * n_probes = strtok(NULL, " ");
-				if(atoi(n_probes)<0)
+				int n_probes = atoi(strtok(NULL, " "));
+				if(n_probes<0)
 				{
 					errorFlag=1;
 				}
-				char * msg_size = strtok(NULL, " ");
-				if(atoi(msg_size)<0)
+				int msg_size = atoi(strtok(NULL, " "));
+				if(msg_size<0)
 				{
 					errorFlag=1;
 				}
-				char * server_delay = strtok(NULL, " ");
-				if(atoi(server_delay)<0)
+				int server_delay = atoi(strtok(NULL, " "));
+				if(server_delay<0)
 				{
 					errorFlag=1;
 				}
 				if(errorFlag==0)
 				{
-					message = "200 OK - Ready";
-					send(newsfd, message, strlen(message), 0);
+					strcpy(message, "200 OK - Ready\0");
+					byteSent = send(newsfd, message, strlen(message), 0);
+					printf("Message sent to client:");
+					printData(message, byteSent);
 					int n = 1;
-					size_t MeasureByteRecv;
-					size_t MeasureByteSent;
-					char receivedData[MAX_BUF_SIZE];
-					char temp_string[MAX_BUF_SIZE];
 					while(n <= n_probes)
 					{
 						byteRecv = recv(newsfd, receivedData, sizeof(receivedData), 0);
-						strcpy(extractData, receivedData)
+						printf("Data recv from client: ");
+						printData(receivedData, byteRecv);
+						strcpy(extractData, receivedData);
 						strtok(extractData, " ");
-						receivedNumber = atoi(strtok(NULL, " "));
-						printf("Received number: %d, Expected number: %d\n", receivedNumber,n);
-						if (n_arrived != n_pack)
+						int receivedNumber = atoi(strtok(NULL, " "));
+						printf("Received number: %d, Expected number: %d\n", receivedNumber, n);
+						if (receivedNumber != n)
 						{
 							printf("Error sequence number!\n");
 							close(newsfd);
@@ -148,22 +158,28 @@ int main(int argc, char *argv[])
 						else 
 						{
 							sleep(server_delay);
-							printf("Measure response: %s", receivedData);
 							byteSent = send(newsfd, receivedData, byteRecv, 0);
+							printf("Sending to client :");
+							printData(receivedData, byteSent);
 						}
 						n++;
 					}
 					//bye phase
 					byteRecv = recv(newsfd, receivedData, sizeof(receivedData), 0);
-					printf("Received data: %s", receivedData);
+					
+					printf("received data:");
+					printData(receivedData, byteRecv);
+					strcpy(message, "200 OK - Closing\n\0");
+					byteSent = send(newsfd, message, strlen(message), 0);
+					printf("Sending message to client: ");
+					printData(message, byteSent);
 					close(sfd);
 					close(newsfd);
-					exit(EXIT_SUCCESS);
-
+					return 0;
 				}
 				else 
 				{
-					message = "404 ERROR - Invalid hello message";
+					strcpy(message, "404 ERROR - Invalid hello message\0");
 					send(newsfd, message, strlen(message), 0);
 					close(sfd);
 					close(newsfd);
@@ -174,12 +190,8 @@ int main(int argc, char *argv[])
 			{
 				exit(EXIT_FAILURE);
 			}
-			printf("Response to be sent back to client: ");
-			//printData(receivedData, byteRecv);
-			byteSent = send(newsfd, receivedData, byteRecv, 0);
 		}
 	} // End of for(;;)
-		close(sfd);
 		return 0;
 }
 
